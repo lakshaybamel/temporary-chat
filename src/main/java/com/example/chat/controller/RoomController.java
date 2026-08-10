@@ -1,6 +1,7 @@
 package com.example.chat.controller;
 
 import com.example.chat.dto.CreateRoomRequest;
+import com.example.chat.dto.RoomResponse;
 import com.example.chat.entity.Room;
 import com.example.chat.service.RoomService;
 import jakarta.validation.Valid;
@@ -27,5 +28,14 @@ public class RoomController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(room);
+    }
+
+    @GetMapping("/{joinCode}")
+    public ResponseEntity<RoomResponse> getRoom(
+            @PathVariable String joinCode) {
+
+        Room room = roomService.getActiveRoom(joinCode);
+
+        return ResponseEntity.ok(new RoomResponse(room));
     }
 }
