@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Room - Temporary Chat</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+
+<div class="room-container">
+
+    <!-- Room Header -->
+
+    <header class="room-header">
+
+        <div>
+            <h1 id="roomName">Loading...</h1>
+
+            <p>
+                Room Code:
+                <strong id="joinCode">------</strong>
+            </p>
+        </div>
+
+        <div class="room-expiry">
+            <span>Expires in</span>
+            <strong id="expiryTime">--:--:--</strong>
+        </div>
+
+    </header>
+
+
+    <!-- Room Content -->
+
+    <main class="room-main">
+
+        <!-- Chat -->
+
+        <section class="chat-section">
+
+            <div id="messages" class="messages">
+
+                <div class="empty-message">
+                    No messages yet.
+                </div>
+
+            </div>
+
+
+            <!-- Message Input -->
+
+            <div class="message-input-container">
+
+                <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Type a message..."
+                        maxlength="2000"
+                >
+
+                <button id="sendMessageBtn">
+                    Send
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- Room Info -->
+
+        <aside class="room-sidebar">
+
+            <h2>Room</h2>
+
+            <div class="room-code-box">
+
+                <span>Join Code</span>
+
+                <strong id="sidebarJoinCode">
+                    ------
+                </strong>
+
+            </div>
+
+
+            <div class="qr-container">
+
+                <h3>Scan to Join</h3>
+
+                <img
+                        id="qrCode"
+                        alt="Room QR Code"
+                >
+
+            </div>
+
+
+            <button id="copyLinkBtn">
+                Copy Room Link
+            </button>
+
+            <button
+                    id="leaveRoomBtn"
+                    class="secondary-button"
+            >
+                Leave Room
+            </button>
+
+        </aside>
+
+    </main>
+
+</div>
+
+<script src="/js/room.js"></script>
+
+</body>
+</html>
