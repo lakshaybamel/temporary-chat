@@ -9,14 +9,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.example.chat.service.QrCodeService;
+import com.google.zxing.WriterException;
+
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/rooms")
 public class RoomController {
 
     private final RoomService roomService;
+    private final QrCodeService qrCodeService;
 
-    public RoomController(RoomService roomService) {
+    public RoomController(
+            RoomService roomService,
+            QrCodeService qrCodeService) {
+
         this.roomService = roomService;
+        this.qrCodeService = qrCodeService;
     }
 
     @PostMapping
@@ -37,5 +47,28 @@ public class RoomController {
         Room room = roomService.getActiveRoom(joinCode);
 
         return ResponseEntity.ok(new RoomResponse(room));
+    }
+
+    @GetMapping("/{joinCode}/qr")
+    public ResponseEntity<byte[]> getRoomQrCode(
+            @PathVariable String joinCode) {
+
+        try {
+
+            // Validate that the room exists and is still active
+            roomService.getActiveRoom(joinCode);
+
+            byte[] qrCode = qrCodeService.generateRoomQrCode(joinCode);
+
+            return ResponseEntity.ok()
+                    .header("Content-Type", "image/png")
+                    .body(qrCode);
+
+        } catch (WriterException | IOException exception) {
+
+            return ResponseEntity
+                    .internalServerError()
+                    .build();
+        }
     }
 }

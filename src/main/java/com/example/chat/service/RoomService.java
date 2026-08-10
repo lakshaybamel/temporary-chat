@@ -19,7 +19,6 @@ public class RoomService {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     private final SecureRandom random = new SecureRandom();
-wq
     public RoomService(RoomRepository roomRepository) {
         this.roomRepository = roomRepository;
     }
