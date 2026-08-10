@@ -14,19 +14,28 @@ import com.google.zxing.WriterException;
 
 import java.io.IOException;
 
+import com.example.chat.dto.MessageResponse;
+import com.example.chat.entity.Room;
+import com.example.chat.service.MessageService;
+
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/rooms")
 public class RoomController {
 
     private final RoomService roomService;
     private final QrCodeService qrCodeService;
+    private final MessageService messageService;
 
     public RoomController(
             RoomService roomService,
-            QrCodeService qrCodeService) {
+            QrCodeService qrCodeService,
+            MessageService messageService) {
 
         this.roomService = roomService;
         this.qrCodeService = qrCodeService;
+        this.messageService = messageService;
     }
 
     @PostMapping
@@ -70,5 +79,20 @@ public class RoomController {
                     .internalServerError()
                     .build();
         }
+    }
+
+    @GetMapping("/{joinCode}/messages")
+    public ResponseEntity<List<MessageResponse>> getMessages(
+            @PathVariable String joinCode) {
+
+        Room room = roomService.getActiveRoom(joinCode);
+
+        List<MessageResponse> messages = messageService
+                .getMessages(room)
+                .stream()
+                .map(MessageResponse::new)
+                .toList();
+
+        return ResponseEntity.ok(messages);
     }
 }
