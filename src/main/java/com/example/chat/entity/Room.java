@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "rooms")
 public class Room {
@@ -27,6 +30,14 @@ public class Room {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RoomStatus status;
+
+    @OneToMany(
+            mappedBy = "room",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("createdAt ASC")
+    private List<Message> messages = new ArrayList<>();
 
     public Room() {
     }
@@ -55,6 +66,10 @@ public class Room {
         return status;
     }
 
+    public List<Message> getMessages() {
+        return messages;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -77,5 +92,9 @@ public class Room {
 
     public void setStatus(RoomStatus status) {
         this.status = status;
+    }
+
+    public void setMessages(List<Message> messages) {
+        this.messages = messages;
     }
 }
