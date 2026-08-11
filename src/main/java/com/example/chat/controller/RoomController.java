@@ -15,8 +15,18 @@ import com.google.zxing.WriterException;
 import java.io.IOException;
 
 import com.example.chat.dto.MessageResponse;
-import com.example.chat.entity.Room;
 import com.example.chat.service.MessageService;
+import com.example.chat.service.FileStorageService;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.RequestParam;
+import com.example.chat.entity.Message;
+
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+
+
+import java.util.Map;
+
 
 import java.util.List;
 
@@ -27,15 +37,18 @@ public class RoomController {
     private final RoomService roomService;
     private final QrCodeService qrCodeService;
     private final MessageService messageService;
+    private final FileStorageService fileStorageService;
 
     public RoomController(
             RoomService roomService,
             QrCodeService qrCodeService,
-            MessageService messageService) {
+            MessageService messageService,
+            FileStorageService fileStorageService) {
 
         this.roomService = roomService;
         this.qrCodeService = qrCodeService;
         this.messageService = messageService;
+        this.fileStorageService = fileStorageService;
     }
 
     @PostMapping
@@ -94,5 +107,82 @@ public class RoomController {
                 .toList();
 
         return ResponseEntity.ok(messages);
+    }
+
+    @PostMapping("/{joinCode}/files")
+    public ResponseEntity<?> uploadFile(
+            @PathVariable String joinCode,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("senderName") String senderName) {
+
+        try {
+
+            if (senderName == null ||
+                    senderName.isBlank()) {
+
+                return ResponseEntity
+                        .badRequest()
+                        .body(
+                                Map.of(
+                                        "message",
+                                        "Sender name is required."
+                                )
+                        );
+            }
+
+            Room room =
+                    roomService.getActiveRoom(joinCode);
+
+
+            String storagePath =
+                    fileStorageService.uploadFile(
+                            room.getJoinCode(),
+                            file
+                    );
+
+
+            String mimeType =
+                    file.getContentType() != null
+                            ? file.getContentType()
+                            : "application/octet-stream";
+
+
+            Message message =
+                    messageService.createFileMessage(
+                            room,
+                            senderName,
+                            file.getOriginalFilename(),
+                            storagePath,
+                            file.getSize(),
+                            mimeType
+                    );
+
+
+            return ResponseEntity.ok(
+                    new MessageResponse(message)
+            );
+
+        } catch (IllegalArgumentException e) {
+
+            return ResponseEntity
+                    .badRequest()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    e.getMessage()
+                            )
+                    );
+
+        } catch (IOException e) {
+
+            return ResponseEntity
+                    .internalServerError()
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "Unable to upload file."
+                            )
+                    );
+        }
     }
 }

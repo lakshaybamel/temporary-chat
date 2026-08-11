@@ -35,5 +35,27 @@ public class MessageService {
 
         return messageRepository.save(message);
     }
+
+    public Message createFileMessage(
+            Room room,
+            String senderName,
+            String fileName,
+            String filePath,
+            Long fileSize,
+            String mimeType) {
+
+        Message message = new Message();
+
+        message.setRoom(room);
+        message.setMessageType(MessageType.FILE);
+        message.setSenderName(senderName.trim());
+
+        message.setFileName(fileName);
+        message.setFilePath(filePath);
+        message.setFileSize(fileSize);
+        message.setMimeType(mimeType);
+
+        return messageRepository.save(message);
+    }
 }
 
