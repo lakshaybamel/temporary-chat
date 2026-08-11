@@ -23,6 +23,7 @@ import com.example.chat.entity.Message;
 
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 
 import java.util.Map;
@@ -38,17 +39,20 @@ public class RoomController {
     private final QrCodeService qrCodeService;
     private final MessageService messageService;
     private final FileStorageService fileStorageService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public RoomController(
             RoomService roomService,
             QrCodeService qrCodeService,
             MessageService messageService,
-            FileStorageService fileStorageService) {
+            FileStorageService fileStorageService,
+            SimpMessagingTemplate messagingTemplate) {
 
         this.roomService = roomService;
         this.qrCodeService = qrCodeService;
         this.messageService = messageService;
         this.fileStorageService = fileStorageService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @PostMapping
@@ -157,10 +161,15 @@ public class RoomController {
                             mimeType
                     );
 
+            MessageResponse messageResponse =
+                    new MessageResponse(message);
 
-            return ResponseEntity.ok(
-                    new MessageResponse(message)
+            messagingTemplate.convertAndSend(
+                    "/topic/room/" + room.getJoinCode(),
+                    messageResponse
             );
+
+            return ResponseEntity.ok(messageResponse);
 
         } catch (IllegalArgumentException e) {
 

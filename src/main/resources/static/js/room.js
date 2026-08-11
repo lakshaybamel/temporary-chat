@@ -42,7 +42,7 @@ async function loadRoom() {
 
 		const data = await response.json();
 
-	    if (!response.ok) {
+		if (!response.ok) {
 			alert(data.message || "Unable to access room.");
 
 			window.location.href = "/";
@@ -275,9 +275,21 @@ function connectWebSocket() {
 		console.log("WebSocket connected");
 
 		stompClient.subscribe(`/topic/room/${joinCode}`, function (message) {
-			const chatMessage = JSON.parse(message.body);
+			console.log("===== CHAT MESSAGE RECEIVED =====");
 
-			displayNewMessage(chatMessage);
+			console.log("Raw body:", message.body);
+
+			try {
+				const chatMessage = JSON.parse(message.body);
+
+				console.log("Parsed message:", chatMessage);
+
+				console.log("Message type:", chatMessage.messageType);
+
+				displayNewMessage(chatMessage);
+			} catch (error) {
+				console.error("Failed to process WebSocket message:", error);
+			}
 		});
 	};
 
@@ -347,6 +359,8 @@ function sendMessage() {
    ========================= */
 
 function displayNewMessage(message) {
+	console.log("Displaying message:", message);
+
 	const messagesContainer = document.getElementById("messages");
 
 	const emptyMessage = messagesContainer.querySelector(".empty-message");
@@ -373,6 +387,24 @@ function displayNewMessage(message) {
                 ${formatTime(message.createdAt)}
             </small>
         `;
+	} else if (message.messageType === "FILE") {
+		messageElement.innerHTML = `
+            <strong>
+                ${escapeHtml(message.senderName)}
+            </strong>
+
+            <p>
+                📎 ${escapeHtml(message.fileName)}
+            </p>
+
+            <small>
+                ${formatTime(message.createdAt)}
+            </small>
+        `;
+	} else {
+		console.warn("Unknown message type:", message.messageType);
+
+		return;
 	}
 
 	messagesContainer.appendChild(messageElement);
