@@ -12,6 +12,10 @@ const copyLinkBtn = document.getElementById("copyLinkBtn");
 
 const leaveRoomBtn = document.getElementById("leaveRoomBtn");
 
+const messageInput = document.getElementById("messageInput");
+
+const sendMessageBtn = document.getElementById("sendMessageBtn");
+
 /* =========================
    GET JOIN CODE FROM URL
    ========================= */
@@ -26,6 +30,7 @@ const joinCode = pathParts[pathParts.length - 1].toUpperCase();
 
 let room = null;
 let countdownInterval = null;
+let stompClient = null;
 
 /* =========================
    LOAD ROOM
@@ -252,6 +257,144 @@ function formatTime(dateString) {
 }
 
 /* =========================
+   WebSocket connection
+   ========================= */
+
+function connectWebSocket() {
+	stompClient = new StompJs.Client({
+		brokerURL: `ws://${window.location.host}/ws`,
+
+		reconnectDelay: 5000,
+
+		debug: function (message) {
+			console.log("[STOMP]", message);
+		},
+	});
+
+	stompClient.onConnect = function () {
+		console.log("WebSocket connected");
+
+		stompClient.subscribe(`/topic/room/${joinCode}`, function (message) {
+			const chatMessage = JSON.parse(message.body);
+
+			displayNewMessage(chatMessage);
+		});
+	};
+
+	stompClient.onStompError = function (frame) {
+		console.error("STOMP error:", frame.headers["message"]);
+	};
+
+	stompClient.onWebSocketError = function (error) {
+		console.error("WebSocket error:", error);
+	};
+
+	stompClient.activate();
+}
+
+/* =========================
+   Generate anonymous sender name
+   ========================= */
+
+function getSenderName() {
+	let senderName = sessionStorage.getItem("senderName");
+
+	if (!senderName) {
+		const randomNumber = Math.floor(1000 + Math.random() * 9000);
+
+		senderName = `Guest-${randomNumber}`;
+
+		sessionStorage.setItem("senderName", senderName);
+	}
+
+	return senderName;
+}
+
+/* =========================
+   SEND MESSAGE
+   ========================= */
+
+function sendMessage() {
+	const content = messageInput.value.trim();
+
+	if (!content) {
+		return;
+	}
+
+	if (!stompClient || !stompClient.connected) {
+		alert("Chat connection is not ready.");
+
+		return;
+	}
+
+	stompClient.publish({
+		destination: `/app/chat/${joinCode}`,
+
+		body: JSON.stringify({
+			content: content,
+
+			senderName: getSenderName(),
+		}),
+	});
+
+	messageInput.value = "";
+
+	messageInput.focus();
+}
+
+/* =========================
+   Display real-time messages
+   ========================= */
+
+function displayNewMessage(message) {
+	const messagesContainer = document.getElementById("messages");
+
+	const emptyMessage = messagesContainer.querySelector(".empty-message");
+
+	if (emptyMessage) {
+		emptyMessage.remove();
+	}
+
+	const messageElement = document.createElement("div");
+
+	messageElement.classList.add("message-item");
+
+	if (message.messageType === "TEXT") {
+		messageElement.innerHTML = `
+            <strong>
+                ${escapeHtml(message.senderName)}
+            </strong>
+
+            <p>
+                ${escapeHtml(message.content)}
+            </p>
+
+            <small>
+                ${formatTime(message.createdAt)}
+            </small>
+        `;
+	}
+
+	messagesContainer.appendChild(messageElement);
+
+	messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+/* =========================
+   SEND MESSAGE BTN
+   ========================= */
+
+sendMessageBtn.addEventListener("click", sendMessage);
+
+messageInput.addEventListener("keydown", (event) => {
+	if (event.key === "Enter") {
+		event.preventDefault();
+
+		sendMessage();
+	}
+});
+
+/* =========================
    COPY ROOM LINK
    ========================= */
 
@@ -289,8 +432,12 @@ leaveRoomBtn.addEventListener("click", () => {
    START
    ========================= */
 
-loadRoom().then((roomLoaded) => {
-	if (roomLoaded) {
-		loadMessages();
+loadRoom().then(async (roomLoaded) => {
+	if (!roomLoaded) {
+		return;
 	}
+
+	await loadMessages();
+
+	connectWebSocket();
 });
