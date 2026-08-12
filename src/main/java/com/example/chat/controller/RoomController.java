@@ -25,11 +25,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
+import com.example.chat.entity.MessageType;
+import com.example.chat.service.FileDownloadService;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Map;
-
-
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -40,19 +42,22 @@ public class RoomController {
     private final MessageService messageService;
     private final FileStorageService fileStorageService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final FileDownloadService fileDownloadService;
 
     public RoomController(
             RoomService roomService,
             QrCodeService qrCodeService,
             MessageService messageService,
             FileStorageService fileStorageService,
-            SimpMessagingTemplate messagingTemplate) {
+            SimpMessagingTemplate messagingTemplate,
+            FileDownloadService fileDownloadService) {
 
         this.roomService = roomService;
         this.qrCodeService = qrCodeService;
         this.messageService = messageService;
         this.fileStorageService = fileStorageService;
         this.messagingTemplate = messagingTemplate;
+        this.fileDownloadService = fileDownloadService;
     }
 
     @PostMapping
@@ -193,5 +198,65 @@ public class RoomController {
                             )
                     );
         }
+    }
+
+    @GetMapping("/{joinCode}/files/{messageId}")
+    public ResponseEntity<?> getFileDownloadUrl(
+            @PathVariable String joinCode,
+            @PathVariable Long messageId) {
+
+        // Verify room is active.
+        // RoomExpiredException should propagate to the
+        // existing global exception handler and return 410.
+        Room room =
+                roomService.getActiveRoom(joinCode);
+
+
+        // Find FILE message belonging to this room.
+        Optional<Message> messageOptional =
+                messageService.getFileMessage(
+                        messageId,
+                        room.getId()
+                );
+
+
+        // File does not belong to this room
+        if (messageOptional.isEmpty()) {
+
+            return ResponseEntity
+                    .status(404)
+                    .body(
+                            Map.of(
+                                    "message",
+                                    "File not found."
+                            )
+                    );
+        }
+
+
+        Message message =
+                messageOptional.get();
+
+
+        // Generate temporary signed URL
+        String signedUrl =
+                fileDownloadService.createSignedUrl(
+                        message.getFilePath(),
+                        300
+                );
+
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "fileName",
+                        message.getFileName(),
+
+                        "downloadUrl",
+                        signedUrl,
+
+                        "expiresIn",
+                        300
+                )
+        );
     }
 }

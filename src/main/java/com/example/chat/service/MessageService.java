@@ -8,6 +8,7 @@ import com.example.chat.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MessageService {
@@ -56,6 +57,29 @@ public class MessageService {
         message.setMimeType(mimeType);
 
         return messageRepository.save(message);
+    }
+
+    public Message getMessageById(Long messageId) {
+
+        return messageRepository
+                .findById(messageId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Message not found."
+                        )
+                );
+    }
+
+    public Optional<Message> getFileMessage(
+            Long messageId,
+            Long roomId) {
+
+        return messageRepository
+                .findByIdAndRoom_IdAndMessageType(
+                        messageId,
+                        roomId,
+                        MessageType.FILE
+                );
     }
 }
 
