@@ -91,6 +91,39 @@ async function loadMessages() {
 }
 
 /* =========================
+   FILE DOWNLOAD FUNCTION
+   ========================= */
+
+async function downloadFile(messageId, button) {
+	try {
+		button.disabled = true;
+		button.textContent = "Preparing...";
+
+		const response = await fetch(
+			`/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`,
+		);
+
+		const data = await response.json();
+
+		if (!response.ok) {
+			alert(data.message || "Unable to download file.");
+
+			return;
+		}
+
+		// Open the temporary signed URL
+		window.open(data.downloadUrl, "_blank");
+	} catch (error) {
+		console.error("File download error:", error);
+
+		alert("Unable to download file.");
+	} finally {
+		button.disabled = false;
+		button.textContent = "Download";
+	}
+}
+
+/* =========================
    DISPLAY ROOM
    ========================= */
 
@@ -206,14 +239,19 @@ function displayMessages(messages) {
                     ${escapeHtml(message.senderName)}
                 </strong>
 
-                <p>
-                    📎
-                    ${escapeHtml(message.fileName)}
-                </p>
+                <div class="file-message">
 
-                <small>
-                    ${formatTime(message.createdAt)}
-                </small>
+                    <span class="file-name">
+                        📎 ${escapeHtml(message.fileName)}
+                    </span>
+
+                    <button
+                        class="download-file-btn"
+                        data-message-id="${message.id}">
+                        Download
+                    </button>
+
+                </div>
             `;
 		}
 
@@ -389,18 +427,28 @@ function displayNewMessage(message) {
         `;
 	} else if (message.messageType === "FILE") {
 		messageElement.innerHTML = `
-            <strong>
-                ${escapeHtml(message.senderName)}
-            </strong>
+             <strong>
+                 ${escapeHtml(message.senderName)}
+             </strong>
 
-            <p>
-                📎 ${escapeHtml(message.fileName)}
-            </p>
+             <div class="file-message">
 
-            <small>
-                ${formatTime(message.createdAt)}
-            </small>
-        `;
+                 <span class="file-name">
+                     📎 ${escapeHtml(message.fileName)}
+                 </span>
+
+                 <button
+                     class="download-file-btn"
+                     data-message-id="${message.id}">
+                     Download
+                 </button>
+
+             </div>
+
+             <small>
+                 ${formatTime(message.createdAt)}
+             </small>
+         `;
 	} else {
 		console.warn("Unknown message type:", message.messageType);
 
@@ -450,6 +498,26 @@ copyLinkBtn.addEventListener("click", async () => {
 
 		alert("Unable to copy room link.");
 	}
+});
+
+/* =========================
+   CLICK HANDLER
+   ========================= */
+
+document.addEventListener("click", function (event) {
+	const button = event.target.closest(".download-file-btn");
+
+	if (!button) {
+		return;
+	}
+
+	const messageId = button.dataset.messageId;
+
+	if (!messageId) {
+		return;
+	}
+
+	downloadFile(messageId, button);
 });
 
 /* =========================

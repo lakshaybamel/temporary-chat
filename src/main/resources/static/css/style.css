@@ -337,3 +337,32 @@ button:hover {
     }
 
 }
+
+.file-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.file-name {
+    word-break: break-word;
+}
+
+.download-file-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #2563eb;
+    color: white;
+}
+
+.download-file-btn:hover {
+    opacity: 0.9;
+}
+
+.download-file-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
