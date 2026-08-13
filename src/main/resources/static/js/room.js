@@ -156,6 +156,8 @@ async function uploadFile(file) {
 	try {
 		attachFileBtn.disabled = true;
 		sendMessageBtn.disabled = true;
+		uploadFileBtn.disabled = true;
+        removeFileBtn.disabled = true;
 
 		selectedFileName.textContent = `Uploading ${file.name}...`;
 
@@ -197,7 +199,9 @@ async function uploadFile(file) {
 		alert("Unable to upload file.");
 	} finally {
 		attachFileBtn.disabled = false;
-		sendMessageBtn.disabled = false;
+        sendMessageBtn.disabled = false;
+        uploadFileBtn.disabled = false;
+        removeFileBtn.disabled = false;
 	}
 }
 
@@ -312,26 +316,40 @@ function displayMessages(messages) {
            FILE MESSAGE
            ========================= */
 		else if (message.messageType === "FILE") {
-			messageElement.innerHTML = `
+
+            messageElement.innerHTML = `
                 <strong>
                     ${escapeHtml(message.senderName)}
                 </strong>
 
-                <div class="file-message">
+                <div class="file-card">
 
-                    <span class="file-name">
-                        📎 ${escapeHtml(message.fileName)}
-                    </span>
+                    <div class="file-info">
+
+                        <div class="file-name">
+                            📄 ${escapeHtml(message.fileName)}
+                        </div>
+
+                        <div class="file-size">
+                            ${formatFileSize(message.fileSize)}
+                        </div>
+
+                    </div>
 
                     <button
+                        type="button"
                         class="download-file-btn"
                         data-message-id="${message.id}">
                         Download
                     </button>
 
                 </div>
+
+                <small>
+                    ${formatTime(message.createdAt)}
+                </small>
             `;
-		}
+        }
 
 		messagesContainer.appendChild(messageElement);
 	});
@@ -370,6 +388,43 @@ function formatTime(dateString) {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
+}
+
+/* =========================
+   FORMAT FILE SIZE
+   ========================= */
+
+function formatFileSize(bytes) {
+
+    if (
+        bytes === null ||
+        bytes === undefined ||
+        bytes === 0
+    ) {
+        return "Unknown size";
+    }
+
+    const units = [
+        "B",
+        "KB",
+        "MB",
+        "GB"
+    ];
+
+    let size = bytes;
+    let unitIndex = 0;
+
+    while (
+        size >= 1024 &&
+        unitIndex < units.length - 1
+    ) {
+        size /= 1024;
+        unitIndex++;
+    }
+
+    return `${size.toFixed(
+        unitIndex === 0 ? 0 : 2
+    )} ${units[unitIndex]}`;
 }
 
 /* =========================
@@ -504,30 +559,40 @@ function displayNewMessage(message) {
             </small>
         `;
 	} else if (message.messageType === "FILE") {
-		messageElement.innerHTML = `
-             <strong>
-                 ${escapeHtml(message.senderName)}
-             </strong>
 
-             <div class="file-message">
+          messageElement.innerHTML = `
+              <strong>
+                  ${escapeHtml(message.senderName)}
+              </strong>
 
-                 <span class="file-name">
-                     📎 ${escapeHtml(message.fileName)}
-                 </span>
+              <div class="file-card">
 
-                 <button
-                     class="download-file-btn"
-                     data-message-id="${message.id}">
-                     Download
-                 </button>
+                  <div class="file-info">
 
-             </div>
+                      <div class="file-name">
+                          📄 ${escapeHtml(message.fileName)}
+                      </div>
 
-             <small>
-                 ${formatTime(message.createdAt)}
-             </small>
-         `;
-	} else {
+                      <div class="file-size">
+                          ${formatFileSize(message.fileSize)}
+                      </div>
+
+                  </div>
+
+                  <button
+                      type="button"
+                      class="download-file-btn"
+                      data-message-id="${message.id}">
+                      Download
+                  </button>
+
+              </div>
+
+              <small>
+                  ${formatTime(message.createdAt)}
+              </small>
+          `;
+    } else {
 		console.warn("Unknown message type:", message.messageType);
 
 		return;
@@ -610,17 +675,46 @@ attachFileBtn.addEventListener("click", () => {
    Display the selected file
    ========================= */
 
-fileInput.addEventListener("change", () => {
-	if (!fileInput.files.length) {
-		return;
-	}
+fileInput.addEventListener(
+    "change",
+    () => {
 
-	const file = fileInput.files[0];
+        if (!fileInput.files.length) {
+            return;
+        }
 
-	selectedFileName.textContent = file.name;
+        const file =
+            fileInput.files[0];
 
-	selectedFile.style.display = "flex";
-});
+        const maxFileSize =
+            10 * 1024 * 1024;
+
+
+        // Validate size immediately
+        if (file.size > maxFileSize) {
+
+            alert(
+                "File size cannot exceed 10 MB."
+            );
+
+            fileInput.value = "";
+
+            selectedFileName.textContent = "";
+
+            selectedFile.style.display =
+                "none";
+
+            return;
+        }
+
+
+        selectedFileName.textContent =
+            `${file.name} (${formatFileSize(file.size)})`;
+
+        selectedFile.style.display =
+            "flex";
+    }
+);
 
 /* =========================
    Remove selected file

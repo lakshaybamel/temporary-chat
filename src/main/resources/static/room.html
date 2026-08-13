@@ -4,73 +4,95 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>Room - Temporary Chat</title>
+    <title>Room - Fleeting</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
 
-    <link rel="stylesheet" href="/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/room.css" />
 </head>
 
 <body>
 <div class="room-container">
+
     <!-- Room Header -->
-
     <header class="room-header">
-        <div>
-            <h1 id="roomName">Loading...</h1>
+        <div class="room-header-left">
+            <a href="/" class="brand brand-compact">
+                <img src="https://i.ibb.co/4x63vJC/logo.png" alt="Fleeting logo" class="brand-logo">
+            </a>
 
-            <p>
-                Room Code:
-                <strong id="joinCode">------</strong>
-            </p>
+            <div class="room-title-block">
+                <h1 id="roomName">Loading...</h1>
+                <p class="room-code-line">
+                    Room Code:
+                    <strong id="joinCode" class="mono-chip">------</strong>
+                </p>
+            </div>
         </div>
 
-        <div class="room-expiry">
-            <span>Expires in</span>
-            <strong id="expiryTime">--:--:--</strong>
+        <div class="room-header-right">
+            <div class="room-expiry">
+                <span>Expires in</span>
+                <strong id="expiryTime">--:--:--</strong>
+            </div>
+
+            <button type="button" id="roomInfoBtn" class="icon-btn room-info-toggle" aria-label="Room info">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8h.01M11 12h1v5h1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
         </div>
     </header>
 
     <!-- Room Content -->
-
     <main class="room-main">
-        <!-- Chat -->
 
+        <!-- Chat -->
         <section class="chat-section">
             <div id="messages" class="messages">
                 <div class="empty-message">No messages yet.</div>
             </div>
 
             <!-- Message Input -->
-
             <div class="message-input-container">
                 <div class="message-input-area">
                     <input type="file" id="fileInput" hidden />
 
-                    <button type="button" id="attachFileBtn" title="Attach file">📎</button>
+                    <button type="button" id="attachFileBtn" class="icon-btn" title="Attach file">
+                        <svg viewBox="0 0 24 24" fill="none"><path d="M21 12.5l-8.5 8.5a4.5 4.5 0 01-6.36-6.36L14.5 6.28a3 3 0 014.24 4.24L10.4 18.86a1.5 1.5 0 01-2.12-2.12l7.07-7.07" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
 
                     <input type="text" id="messageInput" placeholder="Type a message..." maxlength="5000" />
 
-                    <button type="button" id="sendMessageBtn">Send</button>
+                    <button type="button" id="sendMessageBtn" class="btn btn-primary send-btn">Send</button>
                 </div>
 
                 <div id="selectedFile" class="selected-file" style="display: none">
                     <span id="selectedFileName"></span>
 
-                    <button type="button" id="uploadFileBtn">Upload</button>
-
-                    <button type="button" id="removeFileBtn">✕</button>
+                    <div class="selected-file-actions">
+                        <button type="button" id="uploadFileBtn" class="btn btn-primary btn-sm">Upload</button>
+                        <button type="button" id="removeFileBtn" class="icon-btn icon-btn-sm">✕</button>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Room Info -->
+        <!-- Room Info backdrop (mobile drawer) -->
+        <div id="roomInfoOverlay" class="room-info-overlay"></div>
 
-        <aside class="room-sidebar">
-            <h2>Room</h2>
+        <!-- Room Info -->
+        <aside class="room-sidebar" id="roomSidebar">
+            <div class="sidebar-header">
+                <h2>Room</h2>
+                <button type="button" id="roomInfoCloseBtn" class="icon-btn icon-btn-sm room-info-close">✕</button>
+            </div>
 
             <div class="room-code-box">
                 <span>Join Code</span>
 
-                <strong id="sidebarJoinCode"> ------ </strong>
+                <strong id="sidebarJoinCode">------</strong>
             </div>
 
             <div class="qr-container">
@@ -79,14 +101,41 @@
                 <img id="qrCode" alt="Room QR Code" />
             </div>
 
-            <button id="copyLinkBtn">Copy Room Link</button>
+            <button id="copyLinkBtn" class="btn btn-secondary btn-block">Copy Room Link</button>
 
-            <button id="leaveRoomBtn" class="secondary-button">Leave Room</button>
+            <button id="leaveRoomBtn" class="btn btn-ghost btn-block secondary-button">Leave Room</button>
         </aside>
+
     </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.1.1/bundles/stomp.umd.min.js"></script>
 <script src="/js/room.js"></script>
+
+<!-- Room-page-only UI behaviour: mobile info drawer toggle.
+     Does not touch room.js or any existing element IDs/handlers. -->
+<script>
+    (function () {
+        const sidebar = document.getElementById("roomSidebar");
+        const overlay = document.getElementById("roomInfoOverlay");
+        const openBtn = document.getElementById("roomInfoBtn");
+        const closeBtn = document.getElementById("roomInfoCloseBtn");
+
+        function openDrawer() {
+            sidebar.classList.add("open");
+            overlay.classList.add("visible");
+        }
+
+        function closeDrawer() {
+            sidebar.classList.remove("open");
+            overlay.classList.remove("visible");
+        }
+
+        if (openBtn) openBtn.addEventListener("click", openDrawer);
+        if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+        if (overlay) overlay.addEventListener("click", closeDrawer);
+    })();
+</script>
+
 </body>
 </html>
