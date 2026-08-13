@@ -452,7 +452,7 @@ function formatFileSize(bytes) {
 
 function connectWebSocket() {
 	stompClient = new StompJs.Client({
-		brokerURL: `ws://${window.location.host}/ws`,
+		brokerURL: `${window.location.protocol === "https:" ? "wss://" : "ws://"}${window.location.host}/ws`,
 
 		reconnectDelay: 5000,
 
