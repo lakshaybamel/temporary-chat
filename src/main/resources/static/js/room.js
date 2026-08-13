@@ -16,6 +16,18 @@ const messageInput = document.getElementById("messageInput");
 
 const sendMessageBtn = document.getElementById("sendMessageBtn");
 
+const fileInput = document.getElementById("fileInput");
+
+const attachFileBtn = document.getElementById("attachFileBtn");
+
+const selectedFile = document.getElementById("selectedFile");
+
+const selectedFileName = document.getElementById("selectedFileName");
+
+const removeFileBtn = document.getElementById("removeFileBtn");
+
+const uploadFileBtn = document.getElementById("uploadFileBtn");
+
 /* =========================
    GET JOIN CODE FROM URL
    ========================= */
@@ -120,6 +132,72 @@ async function downloadFile(messageId, button) {
 	} finally {
 		button.disabled = false;
 		button.textContent = "Download";
+	}
+}
+
+/* =========================
+   FILE UPLOAD FUNCTION
+   ========================= */
+
+async function uploadFile(file) {
+	if (!file) {
+		return;
+	}
+
+	// 10 MB limit
+	const maxFileSize = 10 * 1024 * 1024;
+
+	if (file.size > maxFileSize) {
+		alert("File size cannot exceed 10 MB.");
+
+		return;
+	}
+
+	try {
+		attachFileBtn.disabled = true;
+		sendMessageBtn.disabled = true;
+
+		selectedFileName.textContent = `Uploading ${file.name}...`;
+
+		const formData = new FormData();
+
+		formData.append("file", file);
+
+		formData.append("senderName", getSenderName());
+
+		const response = await fetch(
+			`/api/rooms/${encodeURIComponent(joinCode)}/files`,
+			{
+				method: "POST",
+				body: formData,
+			},
+		);
+
+		const data = await response.json();
+
+		if (!response.ok) {
+			alert(data.message || "Unable to upload file.");
+
+			return;
+		}
+
+		console.log("File uploaded successfully:", data);
+
+		// The FILE message will arrive through
+		// the existing WebSocket subscription.
+
+		fileInput.value = "";
+
+		selectedFileName.textContent = "";
+
+		selectedFile.style.display = "none";
+	} catch (error) {
+		console.error("File upload error:", error);
+
+		alert("Unable to upload file.");
+	} finally {
+		attachFileBtn.disabled = false;
+		sendMessageBtn.disabled = false;
 	}
 }
 
@@ -501,7 +579,7 @@ copyLinkBtn.addEventListener("click", async () => {
 });
 
 /* =========================
-   CLICK HANDLER
+   DOWNLOAD CLICK HANDLER
    ========================= */
 
 document.addEventListener("click", function (event) {
@@ -518,6 +596,56 @@ document.addEventListener("click", function (event) {
 	}
 
 	downloadFile(messageId, button);
+});
+
+/* =========================
+   Open the file picker
+   ========================= */
+
+attachFileBtn.addEventListener("click", () => {
+	fileInput.click();
+});
+
+/* =========================
+   Display the selected file
+   ========================= */
+
+fileInput.addEventListener("change", () => {
+	if (!fileInput.files.length) {
+		return;
+	}
+
+	const file = fileInput.files[0];
+
+	selectedFileName.textContent = file.name;
+
+	selectedFile.style.display = "flex";
+});
+
+/* =========================
+   Remove selected file
+   ========================= */
+
+removeFileBtn.addEventListener("click", () => {
+	fileInput.value = "";
+
+	selectedFileName.textContent = "";
+
+	selectedFile.style.display = "none";
+});
+
+/* =========================
+   Upload button handler
+   ========================= */
+
+uploadFileBtn.addEventListener("click", () => {
+	if (!fileInput.files.length) {
+		return;
+	}
+
+	const file = fileInput.files[0];
+
+	uploadFile(file);
 });
 
 /* =========================

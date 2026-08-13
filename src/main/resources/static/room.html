@@ -1,22 +1,19 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Room - Temporary Chat</title>
 
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style.css" />
 </head>
 
 <body>
-
 <div class="room-container">
-
     <!-- Room Header -->
 
     <header class="room-header">
-
         <div>
             <h1 id="roomName">Loading...</h1>
 
@@ -30,95 +27,66 @@
             <span>Expires in</span>
             <strong id="expiryTime">--:--:--</strong>
         </div>
-
     </header>
-
 
     <!-- Room Content -->
 
     <main class="room-main">
-
         <!-- Chat -->
 
         <section class="chat-section">
-
             <div id="messages" class="messages">
-
-                <div class="empty-message">
-                    No messages yet.
-                </div>
-
+                <div class="empty-message">No messages yet.</div>
             </div>
-
 
             <!-- Message Input -->
 
             <div class="message-input-container">
+                <div class="message-input-area">
+                    <input type="file" id="fileInput" hidden />
 
-                <input
-                        type="text"
-                        id="messageInput"
-                        placeholder="Type a message..."
-                        maxlength="2000"
-                >
+                    <button type="button" id="attachFileBtn" title="Attach file">📎</button>
 
-                <button id="sendMessageBtn">
-                    Send
-                </button>
+                    <input type="text" id="messageInput" placeholder="Type a message..." maxlength="5000" />
 
+                    <button type="button" id="sendMessageBtn">Send</button>
+                </div>
+
+                <div id="selectedFile" class="selected-file" style="display: none">
+                    <span id="selectedFileName"></span>
+
+                    <button type="button" id="uploadFileBtn">Upload</button>
+
+                    <button type="button" id="removeFileBtn">✕</button>
+                </div>
             </div>
-
         </section>
-
 
         <!-- Room Info -->
 
         <aside class="room-sidebar">
-
             <h2>Room</h2>
 
             <div class="room-code-box">
-
                 <span>Join Code</span>
 
-                <strong id="sidebarJoinCode">
-                    ------
-                </strong>
-
+                <strong id="sidebarJoinCode"> ------ </strong>
             </div>
-
 
             <div class="qr-container">
-
                 <h3>Scan to Join</h3>
 
-                <img
-                        id="qrCode"
-                        alt="Room QR Code"
-                >
-
+                <img id="qrCode" alt="Room QR Code" />
             </div>
 
+            <button id="copyLinkBtn">Copy Room Link</button>
 
-            <button id="copyLinkBtn">
-                Copy Room Link
-            </button>
-
-            <button
-                    id="leaveRoomBtn"
-                    class="secondary-button"
-            >
-                Leave Room
-            </button>
-
+            <button id="leaveRoomBtn" class="secondary-button">Leave Room</button>
         </aside>
-
     </main>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.1.1/bundles/stomp.umd.min.js"></script>
 <script src="/js/room.js"></script>
-
 </body>
 </html>
