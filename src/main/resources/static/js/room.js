@@ -106,33 +106,51 @@ async function loadMessages() {
    FILE DOWNLOAD FUNCTION
    ========================= */
 
-async function downloadFile(messageId, button) {
-	try {
-		button.disabled = true;
-		button.textContent = "Preparing...";
+async function downloadFile(messageId, fileName, button) {
+    try {
+        button.disabled = true;
+        button.textContent = "Preparing...";
 
-		const response = await fetch(
-			`/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`,
-		);
+        const response = await fetch(
+            `/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`
+        );
 
-		const data = await response.json();
+        const data = await response.json();
 
-		if (!response.ok) {
-			alert(data.message || "Unable to download file.");
+        if (!response.ok) {
+            alert(data.message || "Unable to download file.");
+            return;
+        }
 
-			return;
-		}
+        // Fetch the actual file from the signed URL
+        const fileResponse = await fetch(data.downloadUrl);
 
-		// Open the temporary signed URL
-		window.open(data.downloadUrl, "_blank");
-	} catch (error) {
-		console.error("File download error:", error);
+        if (!fileResponse.ok) {
+            throw new Error("Failed to fetch file.");
+        }
 
-		alert("Unable to download file.");
-	} finally {
-		button.disabled = false;
-		button.textContent = "Download";
-	}
+        const blob = await fileResponse.blob();
+
+        // Create a temporary download URL
+        const blobUrl = URL.createObjectURL(blob);
+
+        const downloadLink = document.createElement("a");
+        downloadLink.href = blobUrl;
+        downloadLink.download = fileName || "download";
+        document.body.appendChild(downloadLink);
+
+        downloadLink.click();
+
+        downloadLink.remove();
+        URL.revokeObjectURL(blobUrl);
+
+    } catch (error) {
+        console.error("File download error:", error);
+        alert("Unable to download file.");
+    } finally {
+        button.disabled = false;
+        button.textContent = "Download";
+    }
 }
 
 /* =========================
@@ -339,7 +357,8 @@ function displayMessages(messages) {
                     <button
                         type="button"
                         class="download-file-btn"
-                        data-message-id="${message.id}">
+                        data-message-id="${message.id}"
+                        data-file-name="${escapeHtml(message.fileName)}">
                         Download
                     </button>
 
@@ -582,7 +601,8 @@ function displayNewMessage(message) {
                   <button
                       type="button"
                       class="download-file-btn"
-                      data-message-id="${message.id}">
+                      data-message-id="${message.id}"
+                      data-file-name="${escapeHtml(message.fileName)}">
                       Download
                   </button>
 
@@ -655,12 +675,13 @@ document.addEventListener("click", function (event) {
 	}
 
 	const messageId = button.dataset.messageId;
+    const fileName = button.dataset.fileName;
 
-	if (!messageId) {
-		return;
-	}
+    if (!messageId) {
+        return;
+    }
 
-	downloadFile(messageId, button);
+    downloadFile(messageId, fileName, button);
 });
 
 /* =========================
