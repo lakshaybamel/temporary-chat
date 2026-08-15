@@ -117,32 +117,49 @@ async function loadMessages() {
    ========================= */
 
 async function downloadFile(messageId, button) {
-	try {
-		button.disabled = true;
-		button.textContent = "Preparing...";
+    try {
+        button.disabled = true;
+        button.textContent = "Preparing...";
 
-		const response = await fetch(
-			`/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`,
-		);
+        const response = await fetch(
+            `/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`
+        );
 
-		const data = await response.json();
+        const data = await response.json();
 
-		if (!response.ok) {
-			alert(data.message || "Unable to download file.");
+        if (!response.ok) {
+            alert(data.message || "Unable to download file.");
+            return;
+        }
 
-			return;
-		}
+        // Fetch the actual file from the signed URL
+        const fileResponse = await fetch(data.downloadUrl);
 
-		// Open the temporary signed URL
-		window.open(data.downloadUrl, "_blank");
-	} catch (error) {
-		console.error("File download error:", error);
+        if (!fileResponse.ok) {
+            throw new Error("Failed to fetch file.");
+        }
 
-		alert("Unable to download file.");
-	} finally {
-		button.disabled = false;
-		button.textContent = "Download";
-	}
+        const blob = await fileResponse.blob();
+
+        // Create a temporary download link
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = downloadUrl;
+        link.download = data.fileName || "download";
+        document.body.appendChild(link);
+        link.click();
+
+        link.remove();
+        URL.revokeObjectURL(downloadUrl);
+
+    } catch (error) {
+        console.error("File download error:", error);
+        alert("Unable to download file.");
+    } finally {
+        button.disabled = false;
+        button.textContent = "Download";
+    }
 }
 
 /* =========================
