@@ -9,6 +9,7 @@ import com.example.chat.exception.RoomExpiredException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.security.SecureRandom;
 @Service
 public class RoomService {
@@ -25,7 +26,7 @@ public class RoomService {
 
     public Room createRoom(CreateRoomRequest request) {
 
-        LocalDateTime createdAt = LocalDateTime.now();
+        LocalDateTime createdAt = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
 
         Room room = new Room();
 
@@ -63,7 +64,7 @@ public class RoomService {
                 .orElseThrow(() ->
                         new RoomNotFoundException("Room not found"));
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
 
         if (now.isAfter(room.getExpiresAt())) {
 
