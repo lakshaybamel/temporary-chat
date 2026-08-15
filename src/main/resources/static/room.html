@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Room - Fleeting</title>
-    <link rel="icon" type="image/png" href="images/logo.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +33,11 @@
         </div>
 
         <div class="room-header-right">
+            <div class="active-users" id="activeUsers">
+                <span class="pulse-dot"></span>
+                <span id="activeUsersCount">0</span> online
+            </div>
+
             <div class="room-expiry">
                 <span>Expires in</span>
                 <strong id="expiryTime">--:--:--</strong>
@@ -63,7 +67,7 @@
                         <svg viewBox="0 0 24 24" fill="none"><path d="M21 12.5l-8.5 8.5a4.5 4.5 0 01-6.36-6.36L14.5 6.28a3 3 0 014.24 4.24L10.4 18.86a1.5 1.5 0 01-2.12-2.12l7.07-7.07" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
 
-                    <input type="text" id="messageInput" placeholder="Type a message..." maxlength="5000" />
+                    <textarea id="messageInput" placeholder="Type a message... (Shift + Enter for new line)" maxlength="5000" rows="1"></textarea>
 
                     <button type="button" id="sendMessageBtn" class="btn btn-primary send-btn">Send</button>
                 </div>

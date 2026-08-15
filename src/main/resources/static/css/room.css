@@ -257,6 +257,41 @@ button {
     flex-shrink: 0;
 }
 
+/* Hidden until room.js receives a real presence count over
+   the WebSocket — never shows a fake/placeholder number. */
+.active-users {
+    display: none;
+    align-items: center;
+    gap: 7px;
+
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+
+    padding: 6px 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-glass-strong);
+    border-radius: 999px;
+}
+
+.active-users.visible {
+    display: flex;
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399;
+    animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 .room-expiry {
     text-align: right;
 }
@@ -358,7 +393,6 @@ button {
     font-weight: 600;
     font-size: 12.5px;
     letter-spacing: 0.01em;
-    margin-bottom: 5px;
     color: var(--accent-blue);
 }
 
@@ -367,12 +401,48 @@ button {
 .message-item:nth-of-type(4n+3) strong { color: var(--accent-cyan); }
 .message-item:nth-of-type(4n+4) strong { color: var(--accent-pink); }
 
-.message-item p {
+.message-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.copy-message-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: var(--text-muted);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.copy-message-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.copy-message-btn.copied {
+    color: var(--accent-cyan);
+}
+
+/* Message text: preserves newlines, tabs, indentation and
+   spaces exactly as typed or pasted (e.g. pasted code). */
+.message-item p.message-text {
     color: var(--text-primary);
     font-size: 14.5px;
     line-height: 1.5;
-    white-space: normal;
+    white-space: pre-wrap;
     word-break: break-word;
+    tab-size: 4;
+    -moz-tab-size: 4;
 }
 
 .message-item small {
@@ -470,32 +540,47 @@ button {
 
 .message-input-area {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 10px;
 }
 
-.message-input-area input[type="text"] {
+.message-input-area textarea {
     flex: 1;
-    padding: 12px 16px;
+    min-width: 0;
+
+    padding: 11px 16px;
 
     background: var(--bg-elevated);
     border: 1px solid var(--border-glass-strong);
-    border-radius: 999px;
+    border-radius: 20px;
 
     color: var(--text-primary);
     font-family: var(--font-body);
     font-size: 14.5px;
+    line-height: 1.4;
+
+    resize: none;
+    overflow-y: hidden;
 
     transition: border-color 0.2s ease;
 }
 
-.message-input-area input[type="text"]::placeholder {
+.message-input-area textarea::placeholder {
     color: var(--text-muted);
 }
 
-.message-input-area input[type="text"]:focus {
+.message-input-area textarea:focus {
     outline: none;
     border-color: var(--accent-blue);
+}
+
+.message-input-area textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.message-input-area textarea::-webkit-scrollbar-thumb {
+    background: var(--border-glass-strong);
+    border-radius: 8px;
 }
 
 .send-btn {
@@ -687,7 +772,33 @@ button {
         padding: 10px 12px;
     }
 
+    .message-input-area {
+        gap: 6px;
+    }
+
+    .icon-btn {
+        width: 38px;
+        height: 38px;
+    }
+
+    .icon-btn svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    .message-input-area textarea {
+        padding: 10px 12px;
+        font-size: 14px;
+    }
+
     .send-btn {
-        padding: 12px 16px;
+        padding: 11px 14px;
+        font-size: 13.5px;
+    }
+
+    .active-users {
+        padding: 5px 9px;
+        font-size: 11px;
+        gap: 5px;
     }
 }

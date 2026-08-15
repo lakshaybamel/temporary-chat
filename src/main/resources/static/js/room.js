@@ -28,6 +28,10 @@ const removeFileBtn = document.getElementById("removeFileBtn");
 
 const uploadFileBtn = document.getElementById("uploadFileBtn");
 
+const activeUsersElement = document.getElementById("activeUsers");
+
+const activeUsersCountElement = document.getElementById("activeUsersCount");
+
 /* =========================
    GET JOIN CODE FROM URL
    ========================= */
@@ -35,6 +39,12 @@ const uploadFileBtn = document.getElementById("uploadFileBtn");
 const pathParts = window.location.pathname.split("/");
 
 const joinCode = pathParts[pathParts.length - 1].toUpperCase();
+
+/* =========================
+   COPY ICON (used on TEXT messages only)
+   ========================= */
+
+const copyIconSvg = `<svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 /* =========================
    ROOM DATA
@@ -106,51 +116,33 @@ async function loadMessages() {
    FILE DOWNLOAD FUNCTION
    ========================= */
 
-async function downloadFile(messageId, fileName, button) {
-    try {
-        button.disabled = true;
-        button.textContent = "Preparing...";
+async function downloadFile(messageId, button) {
+	try {
+		button.disabled = true;
+		button.textContent = "Preparing...";
 
-        const response = await fetch(
-            `/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`
-        );
+		const response = await fetch(
+			`/api/rooms/${encodeURIComponent(joinCode)}/files/${messageId}`,
+		);
 
-        const data = await response.json();
+		const data = await response.json();
 
-        if (!response.ok) {
-            alert(data.message || "Unable to download file.");
-            return;
-        }
+		if (!response.ok) {
+			alert(data.message || "Unable to download file.");
 
-        // Fetch the actual file from the signed URL
-        const fileResponse = await fetch(data.downloadUrl);
+			return;
+		}
 
-        if (!fileResponse.ok) {
-            throw new Error("Failed to fetch file.");
-        }
+		// Open the temporary signed URL
+		window.open(data.downloadUrl, "_blank");
+	} catch (error) {
+		console.error("File download error:", error);
 
-        const blob = await fileResponse.blob();
-
-        // Create a temporary download URL
-        const blobUrl = URL.createObjectURL(blob);
-
-        const downloadLink = document.createElement("a");
-        downloadLink.href = blobUrl;
-        downloadLink.download = fileName || "download";
-        document.body.appendChild(downloadLink);
-
-        downloadLink.click();
-
-        downloadLink.remove();
-        URL.revokeObjectURL(blobUrl);
-
-    } catch (error) {
-        console.error("File download error:", error);
-        alert("Unable to download file.");
-    } finally {
-        button.disabled = false;
-        button.textContent = "Download";
-    }
+		alert("Unable to download file.");
+	} finally {
+		button.disabled = false;
+		button.textContent = "Download";
+	}
 }
 
 /* =========================
@@ -316,13 +308,12 @@ function displayMessages(messages) {
 
 		if (message.messageType === "TEXT") {
 			messageElement.innerHTML = `
-                <strong>
-                    ${escapeHtml(message.senderName)}
-                </strong>
+                <div class="message-head">
+                    <strong>${escapeHtml(message.senderName)}</strong>
+                    <button type="button" class="copy-message-btn" title="Copy message" aria-label="Copy message">${copyIconSvg}</button>
+                </div>
 
-                <p>
-                    ${escapeHtml(message.content)}
-                </p>
+                <p class="message-text">${escapeHtml(message.content)}</p>
 
                 <small>
                     ${formatTime(message.createdAt)}
@@ -357,8 +348,7 @@ function displayMessages(messages) {
                     <button
                         type="button"
                         class="download-file-btn"
-                        data-message-id="${message.id}"
-                        data-file-name="${escapeHtml(message.fileName)}">
+                        data-message-id="${message.id}">
                         Download
                     </button>
 
@@ -406,6 +396,7 @@ function formatTime(dateString) {
 	return new Date(dateString).toLocaleTimeString([], {
 		hour: "2-digit",
 		minute: "2-digit",
+		timeZone: "Asia/Kolkata",
 	});
 }
 
@@ -452,7 +443,7 @@ function formatFileSize(bytes) {
 
 function connectWebSocket() {
 	stompClient = new StompJs.Client({
-		brokerURL: `${window.location.protocol === "https:" ? "wss://" : "ws://"}${window.location.host}/ws`,
+		brokerURL: `ws://${window.location.host}/ws`,
 
 		reconnectDelay: 5000,
 
@@ -481,6 +472,22 @@ function connectWebSocket() {
 				console.error("Failed to process WebSocket message:", error);
 			}
 		});
+
+		/* =========================
+		   ACTIVE USERS (presence)
+		   Only updates the badge when the backend actually
+		   publishes a real count. No fake/random values.
+		   ========================= */
+
+		stompClient.subscribe(`/topic/room/${joinCode}/presence`, function (message) {
+			try {
+				const data = JSON.parse(message.body);
+
+				updateActiveUsers(data);
+			} catch (error) {
+				console.error("Failed to process presence message:", error);
+			}
+		});
 	};
 
 	stompClient.onStompError = function (frame) {
@@ -492,6 +499,22 @@ function connectWebSocket() {
 	};
 
 	stompClient.activate();
+}
+
+/* =========================
+   ACTIVE USERS (presence)
+   ========================= */
+
+function updateActiveUsers(data) {
+	const count = typeof data === "number" ? data : data && data.activeUsers;
+
+	if (typeof count !== "number" || Number.isNaN(count)) {
+		return;
+	}
+
+	activeUsersCountElement.textContent = count;
+
+	activeUsersElement.classList.add("visible");
 }
 
 /* =========================
@@ -542,6 +565,8 @@ function sendMessage() {
 	messageInput.value = "";
 
 	messageInput.focus();
+
+	resizeMessageInput();
 }
 
 /* =========================
@@ -565,13 +590,12 @@ function displayNewMessage(message) {
 
 	if (message.messageType === "TEXT") {
 		messageElement.innerHTML = `
-            <strong>
-                ${escapeHtml(message.senderName)}
-            </strong>
+            <div class="message-head">
+                <strong>${escapeHtml(message.senderName)}</strong>
+                <button type="button" class="copy-message-btn" title="Copy message" aria-label="Copy message">${copyIconSvg}</button>
+            </div>
 
-            <p>
-                ${escapeHtml(message.content)}
-            </p>
+            <p class="message-text">${escapeHtml(message.content)}</p>
 
             <small>
                 ${formatTime(message.createdAt)}
@@ -601,8 +625,7 @@ function displayNewMessage(message) {
                   <button
                       type="button"
                       class="download-file-btn"
-                      data-message-id="${message.id}"
-                      data-file-name="${escapeHtml(message.fileName)}">
+                      data-message-id="${message.id}">
                       Download
                   </button>
 
@@ -630,11 +653,74 @@ function displayNewMessage(message) {
 sendMessageBtn.addEventListener("click", sendMessage);
 
 messageInput.addEventListener("keydown", (event) => {
-	if (event.key === "Enter") {
+	if (event.key === "Enter" && !event.shiftKey) {
 		event.preventDefault();
 
 		sendMessage();
 	}
+
+	// Shift + Enter falls through to the textarea's default
+	// behavior, which inserts a new line.
+});
+
+/* =========================
+   AUTO-RESIZE COMPOSER
+   Grows the textarea with content up to a max height,
+   then becomes internally scrollable.
+   ========================= */
+
+const MESSAGE_INPUT_MAX_HEIGHT = 160;
+
+function resizeMessageInput() {
+	messageInput.style.height = "auto";
+
+	const newHeight = Math.min(messageInput.scrollHeight, MESSAGE_INPUT_MAX_HEIGHT);
+
+	messageInput.style.height = `${newHeight}px`;
+
+	messageInput.style.overflowY =
+		messageInput.scrollHeight > MESSAGE_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+}
+
+messageInput.addEventListener("input", resizeMessageInput);
+
+resizeMessageInput();
+
+/* =========================
+   COPY MESSAGE TEXT
+   Copies the exact original message content, formatting
+   (newlines/tabs/spaces) intact. TEXT messages only.
+   ========================= */
+
+document.addEventListener("click", function (event) {
+	const copyBtn = event.target.closest(".copy-message-btn");
+
+	if (!copyBtn) {
+		return;
+	}
+
+	const messageItem = copyBtn.closest(".message-item");
+
+	const textElement = messageItem ? messageItem.querySelector(".message-text") : null;
+
+	if (!textElement) {
+		return;
+	}
+
+	navigator.clipboard
+		.writeText(textElement.textContent)
+		.then(() => {
+			copyBtn.classList.add("copied");
+			copyBtn.setAttribute("aria-label", "Copied!");
+
+			setTimeout(() => {
+				copyBtn.classList.remove("copied");
+				copyBtn.setAttribute("aria-label", "Copy message");
+			}, 1500);
+		})
+		.catch((error) => {
+			console.error("Failed to copy message:", error);
+		});
 });
 
 /* =========================
@@ -675,13 +761,12 @@ document.addEventListener("click", function (event) {
 	}
 
 	const messageId = button.dataset.messageId;
-    const fileName = button.dataset.fileName;
 
-    if (!messageId) {
-        return;
-    }
+	if (!messageId) {
+		return;
+	}
 
-    downloadFile(messageId, fileName, button);
+	downloadFile(messageId, button);
 });
 
 /* =========================
