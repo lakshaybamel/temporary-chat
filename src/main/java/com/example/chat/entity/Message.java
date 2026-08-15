@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
+import java.time.ZoneId;
+
 @Entity
 @Table(name = "messages")
 public class Message {
@@ -46,7 +48,7 @@ public class Message {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
     }
 
     public Long getId() {
